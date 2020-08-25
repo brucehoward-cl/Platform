@@ -4,51 +4,97 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Routing;
 using Platform.Services;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Linq;
 
 namespace Platform
 {
     public class Startup
     {
+        public Startup(IConfiguration config)
+        {
+            Configuration = config;
+        }
+        private IConfiguration Configuration;
+
         public void ConfigureServices(IServiceCollection services)
         {
-            //services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
-            //services.AddTransient<IResponseFormatter, GuidService>();
+            services.AddScoped<ITimeStamper, DefaultTimeStamper>();
+            services.AddScoped<IResponseFormatter, TextResponseFormatter>();
+            services.AddScoped<IResponseFormatter, HtmlResponseFormatter>();
             services.AddScoped<IResponseFormatter, GuidService>();
+
+            #region MyRegion
+            //services.AddScoped<IResponseFormatter>(serviceProvider =>
+            //{
+            //    string typeName = Configuration["services:IResponseFormatter"];
+            //    return (IResponseFormatter)ActivatorUtilities.CreateInstance(serviceProvider, typeName == null
+            //                                                            ? typeof(GuidService) : Type.GetType(typeName, true));
+            //});
+            //services.AddScoped<ITimeStamper, DefaultTimeStamper>(); 
+            #endregion
+
+            #region MyRegion
+            ////services.AddSingleton<IResponseFormatter, HtmlResponseFormatter>();
+            ////services.AddTransient<IResponseFormatter, GuidService>();
+            ////services.AddScoped<IResponseFormatter, GuidService>();
+            //services.AddScoped<IResponseFormatter, TimeResponseFormatter>();
+            //services.AddScoped<ITimeStamper, DefaultTimeStamper>(); 
+            #endregion
         }
         //public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IResponseFormatter formatter)
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             app.UseDeveloperExceptionPage();
             app.UseRouting();
-            app.UseMiddleware<WeatherMiddleware>();
-            app.Use(async (context, next) => {
-                if (context.Request.Path == "/middleware/function")
-                {
-                    IResponseFormatter formatter = context.RequestServices.GetService<IResponseFormatter>();
-                    //                    await formatter.Format(context, "Middleware Function: It is snowing in Chicago");
-                    //await TextResponseFormatter.Singleton.Format(context, "Middleware Function: It is snowing in Chicago");
-                    //await TypeBroker.Formatter.Format(context, "Middleware Function: It is snowing in Chicago");
-                    await formatter.Format(context, "Middleware Function: It is snowing in Chicago");
-                    //IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
-                }
-                else
-                {
-                    await next();
-                }
-            });
             app.UseEndpoints(endpoints => {
-                //endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
-                endpoints.MapEndpoint<WeatherEndpoint>("/endpoint/class");
-                //endpoints.MapWeather("/endpoint/class");
-                endpoints.MapGet("/endpoint/function", async context => {
+                endpoints.MapGet("/single", async context => {
                     IResponseFormatter formatter = context.RequestServices.GetService<IResponseFormatter>();
-                    //await context.Response.WriteAsync("Endpoint Function: It is sunny in LA");
-                    //await TextResponseFormatter.Singleton.Format(context,"Endpoint Function: It is sunny in LA");
-                    //await TypeBroker.Formatter.Format(context,"Endpoint Function: It is sunny in LA");
-                    await formatter.Format(context, "Endpoint Function: It is sunny in LA");
-                    //IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
+                    await formatter.Format(context, "Single service");
+                });
+                endpoints.MapGet("/", async context => {
+                    IResponseFormatter formatter = context.RequestServices.GetServices<IResponseFormatter>().First(f => f.RichOutput);
+                    await formatter.Format(context, "Multiple services");
                 });
             });
+
+            #region MyRegion
+            //app.UseDeveloperExceptionPage();
+            //app.UseRouting();
+            //app.UseMiddleware<WeatherMiddleware>();
+            //app.Use(async (context, next) =>
+            //{
+            //    if (context.Request.Path == "/middleware/function")
+            //    {
+            //        IResponseFormatter formatter = context.RequestServices.GetService<IResponseFormatter>();
+            //        //                    await formatter.Format(context, "Middleware Function: It is snowing in Chicago");
+            //        //await TextResponseFormatter.Singleton.Format(context, "Middleware Function: It is snowing in Chicago");
+            //        //await TypeBroker.Formatter.Format(context, "Middleware Function: It is snowing in Chicago");
+            //        await formatter.Format(context, "Middleware Function: It is snowing in Chicago");
+            //        //IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
+            //    }
+            //    else
+            //    {
+            //        await next();
+            //    }
+            //});
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    //endpoints.MapGet("/endpoint/class", WeatherEndpoint.Endpoint);
+            //    endpoints.MapEndpoint<WeatherEndpoint>("/endpoint/class");
+            //    //endpoints.MapWeather("/endpoint/class");
+            //    endpoints.MapGet("/endpoint/function", async context =>
+            //    {
+            //        IResponseFormatter formatter = context.RequestServices.GetService<IResponseFormatter>();
+            //        //await context.Response.WriteAsync("Endpoint Function: It is sunny in LA");
+            //        //await TextResponseFormatter.Singleton.Format(context,"Endpoint Function: It is sunny in LA");
+            //        //await TypeBroker.Formatter.Format(context,"Endpoint Function: It is sunny in LA");
+            //        await formatter.Format(context, "Endpoint Function: It is sunny in LA");
+            //        //IResponseFormatter formatter = app.ApplicationServices.GetService<IResponseFormatter>();
+            //    });
+            //}); 
+            #endregion
         }
     }
 
