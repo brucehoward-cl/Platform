@@ -7,6 +7,7 @@ using Platform.Services;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace Platform
 {
@@ -20,10 +21,14 @@ namespace Platform
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddScoped<ITimeStamper, DefaultTimeStamper>();
-            services.AddScoped<IResponseFormatter, TextResponseFormatter>();
-            services.AddScoped<IResponseFormatter, HtmlResponseFormatter>();
-            services.AddScoped<IResponseFormatter, GuidService>();
+            services.AddSingleton(typeof(ICollection<>), typeof(List<>));
+
+            #region MyRegion
+            //services.AddScoped<ITimeStamper, DefaultTimeStamper>();
+            //services.AddScoped<IResponseFormatter, TextResponseFormatter>();
+            //services.AddScoped<IResponseFormatter, HtmlResponseFormatter>();
+            //services.AddScoped<IResponseFormatter, GuidService>(); 
+            #endregion
 
             #region MyRegion
             //services.AddScoped<IResponseFormatter>(serviceProvider =>
@@ -49,15 +54,41 @@ namespace Platform
             app.UseDeveloperExceptionPage();
             app.UseRouting();
             app.UseEndpoints(endpoints => {
-                endpoints.MapGet("/single", async context => {
-                    IResponseFormatter formatter = context.RequestServices.GetService<IResponseFormatter>();
-                    await formatter.Format(context, "Single service");
+                endpoints.MapGet("/string", async context => {
+                    ICollection<string> collection = context.RequestServices.GetService<ICollection<string>>();
+                    collection.Add($"Request: { DateTime.Now.ToLongTimeString() }");
+                    foreach (string str in collection)
+                    {
+                        await context.Response.WriteAsync($"String: {str}\n");
+                    }
                 });
-                endpoints.MapGet("/", async context => {
-                    IResponseFormatter formatter = context.RequestServices.GetServices<IResponseFormatter>().First(f => f.RichOutput);
-                    await formatter.Format(context, "Multiple services");
+                endpoints.MapGet("/int", async context => {
+                    ICollection<int> collection = context.RequestServices.GetService<ICollection<int>>();
+                    collection.Add(collection.Count() + 1);
+                    foreach (int val in collection)
+                    {
+                        await context.Response.WriteAsync($"Int: {val}\n");
+                    }
                 });
             });
+
+            #region MyRegion
+            //app.UseDeveloperExceptionPage();
+            //app.UseRouting();
+            //app.UseEndpoints(endpoints =>
+            //{
+            //    endpoints.MapGet("/single", async context =>
+            //    {
+            //        IResponseFormatter formatter = context.RequestServices.GetService<IResponseFormatter>();
+            //        await formatter.Format(context, "Single service");
+            //    });
+            //    endpoints.MapGet("/", async context =>
+            //    {
+            //        IResponseFormatter formatter = context.RequestServices.GetServices<IResponseFormatter>().First(f => f.RichOutput);
+            //        await formatter.Format(context, "Multiple services");
+            //    });
+            //}); 
+            #endregion
 
             #region MyRegion
             //app.UseDeveloperExceptionPage();
