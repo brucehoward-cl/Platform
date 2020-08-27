@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Platform
 {
@@ -24,34 +25,57 @@ namespace Platform
         {
             services.Configure<MessageOptions>(Configuration.GetSection("Location")); //replaces the default values
         }
-//        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IConfiguration config)
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILogger<Startup> logger)
         {
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
             app.UseRouting();
-
             app.UseMiddleware<LocationMiddleware>();
-
-            app.Use(async (context, next) => {
-                //string defaultDebug = config["Logging:LogLevel:Default"]; //This is used (without the need for a Configuration property) if only using it to configure middleware
-                string defaultDebug = Configuration["Logging:LogLevel:Default"];
-                await context.Response.WriteAsync($"The config setting is: {defaultDebug}");
-                string environ = Configuration["ASPNETCORE_ENVIRONMENT"];
-                await context.Response.WriteAsync($"\nThe env setting is: {environ}");
-                string wsID = Configuration["WebService:Id"];
-                string wsKey = Configuration["WebService:Key"];
-                await context.Response.WriteAsync($"\nThe secret ID is: {wsID}");
-                await context.Response.WriteAsync($"\nThe secret Key is: {wsKey}");
-            });
             app.UseEndpoints(endpoints => {
                 endpoints.MapGet("/", async context => {
+                    logger.LogDebug("Response for / started");
                     await context.Response.WriteAsync("Hello World!");
+                    logger.LogDebug("Response for / completed");
                 });
             });
         }
+
+        #region Through Listing 15-19
+        ////        public void Configure(IApplicationBuilder app, IWebHostEnvironment env,IConfiguration config)
+        //public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        //{
+        //    if (env.IsDevelopment())
+        //    {
+        //        app.UseDeveloperExceptionPage();
+        //    }
+        //    app.UseRouting();
+
+        //    app.UseMiddleware<LocationMiddleware>();
+
+        //    app.Use(async (context, next) =>
+        //    {
+        //        //string defaultDebug = config["Logging:LogLevel:Default"]; //This is used (without the need for a Configuration property) if only using it to configure middleware
+        //        string defaultDebug = Configuration["Logging:LogLevel:Default"];
+        //        await context.Response.WriteAsync($"The config setting is: {defaultDebug}");
+        //        string environ = Configuration["ASPNETCORE_ENVIRONMENT"];
+        //        await context.Response.WriteAsync($"\nThe env setting is: {environ}");
+        //        string wsID = Configuration["WebService:Id"];
+        //        string wsKey = Configuration["WebService:Key"];
+        //        await context.Response.WriteAsync($"\nThe secret ID is: {wsID}");
+        //        await context.Response.WriteAsync($"\nThe secret Key is: {wsKey}");
+        //    });
+        //    app.UseEndpoints(endpoints =>
+        //    {
+        //        endpoints.MapGet("/", async context =>
+        //        {
+        //            await context.Response.WriteAsync("Hello World!");
+        //        });
+        //    });
+        //} 
+        #endregion
     }
 }
 
