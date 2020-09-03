@@ -27,70 +27,102 @@ namespace Platform
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            app.UseDeveloperExceptionPage();
-            if (env.IsProduction())
-            {
-                app.UseHsts();
-            }
-            app.UseHttpsRedirection(); //forces redirection to use https for http requests; can also use services.AddHttpsRedirection in ConfigureServices method for options
-            app.UseCookiePolicy();  //for client cookies
-            app.UseMiddleware<ConsentMiddleware>(); //for client cookies
-            app.UseSession();  //for session cookies
-            app.UseRouting();
+            #region Prior to Listing 16-19
+            ////            app.UseDeveloperExceptionPage();
+            //app.UseExceptionHandler("/error.html");
+            //if (env.IsProduction())
+            //{
+            //    app.UseHsts();
+            //}
+            //app.UseHttpsRedirection(); //forces redirection to use https for http requests; can also use services.AddHttpsRedirection in ConfigureServices method for options
+            //app.UseCookiePolicy();  //for client cookies
+            //app.UseStaticFiles();
+            //app.UseMiddleware<ConsentMiddleware>(); //for client cookies
+            //app.UseSession();  //for session cookies
+            //app.UseRouting();
 
-            app.Use(async (context, next) => {
-                await context.Response.WriteAsync($"HTTPS Request: {context.Request.IsHttps} \n");
-                await next();
-            });
+            //app.Use(async (context, next) =>
+            //{
+            //    await context.Response.WriteAsync($"HTTPS Request: {context.Request.IsHttps} \n");
+            //    await next();
+            //});
 
-            #region ClientCookies
+            //#region ClientCookies
+            ////app.UseEndpoints(endpoints =>
+            ////{
+            ////    endpoints.MapGet("/cookie", async context =>
+            ////    {
+            ////        int counter1 = int.Parse(context.Request.Cookies["counter1"] ?? "0") + 1;
+            ////        context.Response.Cookies.Append("counter1", counter1.ToString(),
+            ////            new CookieOptions
+            ////            {
+            ////                MaxAge = TimeSpan.FromMinutes(30),
+            ////                IsEssential = true
+            ////            });
+            ////        int counter2 = int.Parse(context.Request.Cookies["counter2"] ?? "0") + 1;
+            ////        context.Response.Cookies.Append("counter2", counter1.ToString(),
+            ////            new CookieOptions
+            ////            {
+            ////                MaxAge = TimeSpan.FromMinutes(30)
+            ////            });
+            ////        await context.Response.WriteAsync($"Counter1: {counter1}, Counter2: {counter2}");
+            ////    });
+            ////    endpoints.MapGet("clear", context =>
+            ////    {
+            ////        context.Response.Cookies.Delete("counter1");
+            ////        context.Response.Cookies.Delete("counter2");
+            ////        context.Response.Redirect("/");
+            ////        return Task.CompletedTask;
+            ////    });
+            ////    endpoints.MapFallback(async context =>
+            ////        await context.Response.WriteAsync("Hello World!"));
+            ////}); 
+            //#endregion
+
+            //#region SessionCookies
             //app.UseEndpoints(endpoints =>
             //{
             //    endpoints.MapGet("/cookie", async context =>
             //    {
-            //        int counter1 = int.Parse(context.Request.Cookies["counter1"] ?? "0") + 1;
-            //        context.Response.Cookies.Append("counter1", counter1.ToString(),
-            //            new CookieOptions
-            //            {
-            //                MaxAge = TimeSpan.FromMinutes(30),
-            //                IsEssential = true
-            //            });
-            //        int counter2 = int.Parse(context.Request.Cookies["counter2"] ?? "0") + 1;
-            //        context.Response.Cookies.Append("counter2", counter1.ToString(),
-            //            new CookieOptions
-            //            {
-            //                MaxAge = TimeSpan.FromMinutes(30)
-            //            });
+            //        int counter1 = (context.Session.GetInt32("counter1") ?? 0) + 1;
+            //        int counter2 = (context.Session.GetInt32("counter2") ?? 0) + 1;
+            //        context.Session.SetInt32("counter1", counter1);
+            //        context.Session.SetInt32("counter2", counter2);
+            //        await context.Session.CommitAsync();
             //        await context.Response.WriteAsync($"Counter1: {counter1}, Counter2: {counter2}");
             //    });
-            //    endpoints.MapGet("clear", context =>
-            //    {
-            //        context.Response.Cookies.Delete("counter1");
-            //        context.Response.Cookies.Delete("counter2");
-            //        context.Response.Redirect("/");
-            //        return Task.CompletedTask;
-            //    });
             //    endpoints.MapFallback(async context =>
-            //        await context.Response.WriteAsync("Hello World!"));
-            //}); 
+            //    await context.Response.WriteAsync("Hello World!"));
+            //});
+            //#endregion 
             #endregion
 
-            #region SessionCookies
-            app.UseEndpoints(endpoints =>
+            //app.UseDeveloperExceptionPage();
+            app.UseExceptionHandler("/error.html");
+            if (env.IsProduction())
             {
-                endpoints.MapGet("/cookie", async context =>
+                app.UseHsts();
+            }
+            app.UseStaticFiles();
+            app.UseHttpsRedirection();
+            app.UseStatusCodePages("text/html", Responses.DefaultResponse);
+            app.UseCookiePolicy();
+            app.UseMiddleware<ConsentMiddleware>();
+            app.UseSession();
+            app.Use(async (context, next) => {
+                if (context.Request.Path == "/error")
                 {
-                    int counter1 = (context.Session.GetInt32("counter1") ?? 0) + 1;
-                    int counter2 = (context.Session.GetInt32("counter2") ?? 0) + 1;
-                    context.Session.SetInt32("counter1", counter1);
-                    context.Session.SetInt32("counter2", counter2);
-                    await context.Session.CommitAsync();
-                    await context.Response.WriteAsync($"Counter1: {counter1}, Counter2: {counter2}");
-                });
-                endpoints.MapFallback(async context =>
-                await context.Response.WriteAsync("Hello World!"));
-            }); 
-            #endregion
+                    context.Response.StatusCode = StatusCodes.Status404NotFound;
+                    await Task.CompletedTask;
+                }
+                else
+                {
+                    await next();
+                }
+            });
+            app.Run(context => {
+                throw new Exception("Something has gone wrong");
+            });
         }
     }
 
